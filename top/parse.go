@@ -96,16 +96,19 @@ const (
 	command_output_row_idx_command
 )
 
+//anything that might appear in the lines above the actual top output
 var bytesToSkip = [][]byte{
-	{116, 111, 112, 32, 45},                     // 'top -'
-	{84, 97, 115, 107, 115, 58, 32},             // 'Tasks: '
-	{37, 67, 112, 117, 40, 115, 41, 58, 32},     // '%Cpu(s): '
-	{67, 112, 117, 40, 115, 41, 58, 32},         // 'Cpu(s): '
-	{75, 105, 66, 32, 77, 101, 109, 32, 58, 32}, // 'KiB Mem : '
-	{75, 105, 66, 32, 83, 119, 97, 112, 58, 32}, // 'KiB Swap: '
-	{77, 101, 109, 58, 32},                      // 'Mem: '
-	{83, 119, 97, 112, 58, 32},                  // 'Swap: '
-	{80, 73, 68, 32},                            // 'PID '
+	[]byte("top -"),
+	[]byte("Tasks: "),
+	[]byte("%Cpu(s): "),
+	[]byte("Cpu(s): "),
+	[]byte("KiB Mem :"),
+	[]byte("KiB Swap :"),
+	[]byte("Mem: "),
+	[]byte("Swap: "),
+	[]byte("MiB Mem :"),
+	[]byte("MiB Swap:"),
+	[]byte("PID "),
 }
 
 func topRowToSkip(data []byte) bool {
@@ -131,8 +134,13 @@ func Parse(s string) ([]Row, error) {
 		}
 
 		row := strings.Fields(strings.TrimSpace(line))
-		if len(row) != len(Headers) {
+		if len(row) < len(Headers) {
+			//too short
 			return nil, fmt.Errorf("unexpected row column number %v (expected %v)", row, Headers)
+		} else if len(row) > len(Headers) {
+			//command had some spaces in it that got cut up into separate commands by the parser
+			command := strings.Join(row[len(Headers)-1:], " ")
+			row[len(row)-1] = command
 		}
 		rows = append(rows, row)
 	}

@@ -381,9 +381,9 @@ func ReadCSV(fpath string) (*CSV, error) {
 				Threads:                  threads,
 				VoluntaryCtxtSwitches:    volCtxNum,
 				NonvoluntaryCtxtSwitches: nonVolCtxNum,
-				CPUNum:    cpuNum,
-				VMRSSNum:  vmRssNum,
-				VMSizeNum: vmSizeNum,
+				CPUNum:                   cpuNum,
+				VMRSSNum:                 vmRssNum,
+				VMSizeNum:                vmSizeNum,
 			},
 
 			LoadAvg: proc.LoadAvg{
