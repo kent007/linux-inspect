@@ -225,6 +225,8 @@ func parseRow(row []string) (Row, error) {
 
 	trow.TIME = row[command_output_row_idx_time]
 
+	trow.COMMAND = row[command_output_row_idx_command]
+
 	return trow, nil
 }
 
