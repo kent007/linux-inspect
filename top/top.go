@@ -57,7 +57,8 @@ func (cfg *Config) Flags() (fs []string) {
 	//
 	// MAKE THIS TRUE BY DEFAULT
 	// OTHERWISE PARSER HAS TO DEAL WITH HIGHLIGHTED TEXTS
-	fs = append(fs, "-b")
+	// add -w 512 to override command
+	fs = append(fs, "-b", "-w", "512")
 
 	if cfg.Limit > 0 { // if 1, command just exists after one output
 		fs = append(fs, "-n", fmt.Sprintf("%d", cfg.Limit))
