@@ -52,7 +52,7 @@ type Config struct {
 func (cfg *Config) Flags() (fs []string) {
 	// start 'top' in batch mode, which could be useful
 	// for sending output from 'top' to other programs or to a file.
-	// In this mode, 'top' will not accept input and runs until the interations
+	// In this mode, 'top' will not accept input and runs until the interactions
 	// limit ('-n' flag) or until killed.
 	//
 	// MAKE THIS TRUE BY DEFAULT
@@ -60,7 +60,7 @@ func (cfg *Config) Flags() (fs []string) {
 	// add -w 512 to override command
 	fs = append(fs, "-b", "-w", "512")
 
-	if cfg.Limit > 0 { // if 1, command just exists after one output
+	if cfg.Limit > 0 { // if 1, command just exits after one output
 		fs = append(fs, "-n", fmt.Sprintf("%d", cfg.Limit))
 	}
 
@@ -96,19 +96,23 @@ func (cfg *Config) createCmd() error {
 // Get returns all entries in 'top' command.
 // If pid<1, it reads all processes in 'top' command.
 // This is one-time command.
-func Get(topPath string, pid int64) ([]Row, error) {
+func Get(topPath string, pid int64, limit int, interval float64) ([]Row, error) {
 	buf := new(bytes.Buffer)
 	cfg := &Config{
 		Exec:           topPath,
-		Limit:          1,
-		IntervalSecond: 1,
+		Limit:          limit,
+		IntervalSecond: interval,
 		PID:            pid,
 		Writer:         buf,
 		cmd:            nil,
 	}
-	if cfg.Exec == "" {
-		cfg.Exec = topPath
+	if cfg.Limit < 1 {
+		cfg.Limit = 1
 	}
+	if cfg.IntervalSecond <= 0 {
+		cfg.IntervalSecond = 1
+	}
+
 	if err := cfg.createCmd(); err != nil {
 		return nil, err
 	}
