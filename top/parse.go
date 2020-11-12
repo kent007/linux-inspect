@@ -121,22 +121,27 @@ func topRowToSkip(data []byte) bool {
 }
 
 // Parse parses 'top' command output and returns the rows.
-func Parse(s string) ([]Row, error) {
+func Parse(s string) ([]Row, int, error) {
 	lines := strings.Split(s, "\n")
 	rows := make([][]string, 0, len(lines))
+	iterations := 0
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		}
 		if topRowToSkip([]byte(line)) {
+			//it's a header line, specifically keep track of each starting header for iteration count
+			if strings.HasPrefix(line, "top -") {
+				iterations++
+			}
 			continue
 		}
 
 		row := strings.Fields(strings.TrimSpace(line))
 		if len(row) < len(Headers) {
 			//too short
-			return nil, fmt.Errorf("unexpected row column number %v (expected %v)", row, Headers)
+			return nil, iterations, fmt.Errorf("unexpected row column number %v (expected %v)", row, Headers)
 		} else if len(row) > len(Headers) {
 			//command had some spaces in it that got cut up into separate commands by the parser
 			command := strings.Join(row[len(Headers)-1:], " ")
@@ -162,12 +167,12 @@ func Parse(s string) ([]Row, error) {
 		select {
 		case rs := <-rc:
 			if rs.err != nil {
-				return nil, rs.err
+				return nil, iterations, rs.err
 			}
 			tcRows = append(tcRows, rs.row)
 		}
 	}
-	return tcRows, nil
+	return tcRows, iterations, nil
 }
 
 func parseRow(row []string) (Row, error) {

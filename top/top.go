@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"time"
 
 	"github.com/kent007/linux-inspect/pkg/fileutil"
 )
@@ -96,7 +97,7 @@ func (cfg *Config) createCmd() error {
 // Get returns all entries in 'top' command.
 // If pid<1, it reads all processes in 'top' command.
 // This is one-time command.
-func Get(topPath string, pid int64, limit int, interval float64) ([]Row, error) {
+func Get(topPath string, pid int64, limit int, interval float64) ([]Row, int, error) {
 	buf := new(bytes.Buffer)
 	cfg := &Config{
 		Exec:           topPath,
@@ -114,12 +115,57 @@ func Get(topPath string, pid int64, limit int, interval float64) ([]Row, error) 
 	}
 
 	if err := cfg.createCmd(); err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 
 	// run starts the 'top' command and waits for it to complete.
 	if err := cfg.cmd.Run(); err != nil {
-		return nil, err
+		return nil, -1, err
+	}
+	return Parse(buf.String())
+}
+
+// this version of TOP runs until a certain unix nano timestamp occurs, then terminates
+// note that because of how top runs, the first measurement only take ~100ms and following measurements take
+// 'interval' seconds
+// this will theoretically run indefinitely -- not suggested for large timeouts, as the output buffer may become large
+func GetTimed(topPath string, pid int64, stopTimestampNano int64, interval float64) ([]Row, int, error) {
+	buf := new(bytes.Buffer)
+	cfg := &Config{
+		Exec:           topPath,
+		Limit:          0,
+		IntervalSecond: interval,
+		PID:            pid,
+		Writer:         buf,
+		cmd:            nil,
+	}
+	if cfg.IntervalSecond <= 0 {
+		cfg.IntervalSecond = 1
+	}
+
+	if err := cfg.createCmd(); err != nil {
+		return nil, -1, err
+	}
+	duration := time.Until(time.Unix(0, stopTimestampNano))
+	timeout := time.After(duration)
+
+	result := make(chan error)
+
+	_ = cfg.cmd.Start()
+	//put the result from the command on a channel I can select against
+	go func() {
+		result <- cfg.cmd.Wait()
+	}()
+
+	select {
+	case <-timeout:
+		//this has a high possibility of happening anyway, we'll wait for exit to finish before we're done
+		_ = cfg.cmd.Process.Kill()
+		<-result
+	case e := <-result:
+		if e != nil {
+			return nil, -1, e
+		}
 	}
 	return Parse(buf.String())
 }
