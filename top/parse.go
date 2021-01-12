@@ -124,7 +124,9 @@ func topRowToSkip(data []byte) bool {
 func Parse(s string) ([]Row, int, error) {
 	lines := strings.Split(s, "\n")
 	rows := make([][]string, 0, len(lines))
-	iterations := 0
+
+	//start this one before, since the first measurement doesn't really count
+	iterations := -1
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
@@ -171,6 +173,9 @@ func Parse(s string) ([]Row, int, error) {
 			}
 			tcRows = append(tcRows, rs.row)
 		}
+	}
+	if iterations == 0 {
+		return tcRows, 0, fmt.Errorf("top did not take a significant measurement besides startup")
 	}
 	return tcRows, iterations, nil
 }

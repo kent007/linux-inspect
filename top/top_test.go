@@ -9,7 +9,7 @@ import (
 
 func TestGet(t *testing.T) {
 	now := time.Now()
-	rows, iterations, err := Get(DefaultExecPath, 0, 1, .5)
+	rows, iterations, err := Get(DefaultExecPath, 0, 1, 1)
 	if err != nil {
 		t.Skip(err)
 	}
@@ -22,8 +22,8 @@ func TestGet(t *testing.T) {
 func TestTimedGet(t *testing.T) {
 	now := time.Now()
 	log.Printf("starting test at %s", now.String())
-	stopTimestamp := now.Add(3 * time.Second).UnixNano()
-	rows, iterations, err := GetTimed(DefaultExecPath, 0, stopTimestamp, 1)
+	stopTimestamp := now.Add(3*time.Second + 300*time.Millisecond).UnixNano()
+	rows, iterations, err := GetTimed(DefaultExecPath, 0, stopTimestamp, 3)
 
 	if err != nil {
 		t.Skip(err)
