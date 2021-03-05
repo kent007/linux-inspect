@@ -149,7 +149,10 @@ func Parse(s string) ([]Row, int, error) {
 			command := strings.Join(row[len(Headers)-1:], " ")
 			row[len(row)-1] = command
 		}
-		rows = append(rows, row)
+		//again, want to skip the first iteration, we don't care
+		if iterations > 0 {
+			rows = append(rows, row)
+		}
 	}
 
 	type result struct {
