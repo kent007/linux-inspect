@@ -129,7 +129,7 @@ func Get(topPath string, pid int64, limit int, interval float64) ([]Row, int, er
 // note that because of how top runs, the first measurement only take ~100ms and following measurements take
 // 'interval' seconds
 // this will theoretically run indefinitely -- not suggested for large timeouts, as the output buffer may become large
-func GetTimed(topPath string, pid int64, stopTimestampNano int64, interval float64) ([]Row, int, error) {
+func GetTimed(topPath string, pid int64, stopTimestampNano int64, interval float64) ([]Row, int, string, error) {
 	buf := new(bytes.Buffer)
 	cfg := &Config{
 		Exec:           topPath,
@@ -144,7 +144,7 @@ func GetTimed(topPath string, pid int64, stopTimestampNano int64, interval float
 	}
 
 	if err := cfg.createCmd(); err != nil {
-		return nil, -1, err
+		return nil, -1, "", err
 	}
 	duration := time.Until(time.Unix(0, stopTimestampNano))
 	timeout := time.After(duration)
@@ -164,8 +164,9 @@ func GetTimed(topPath string, pid int64, stopTimestampNano int64, interval float
 		<-result
 	case e := <-result:
 		if e != nil {
-			return nil, -1, e
+			return nil, -1, buf.String(), e
 		}
 	}
-	return Parse(buf.String())
+	rows, iterations, err := Parse(buf.String())
+	return rows, iterations, buf.String(), err
 }
